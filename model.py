@@ -7,6 +7,7 @@ class LayerNormalization(nn.Module):
     def __init__(self, features: int, eps:float=10**-6) -> None:
         super().__init__()
         self.eps = eps
+        # nn.Parameter makes the parameter learnable
         self.alpha = nn.Parameter(torch.ones(features)) # alpha is a learnable parameter
         self.bias = nn.Parameter(torch.zeros(features)) # bias is a learnable parameter
 
@@ -64,9 +65,11 @@ class PositionalEncoding(nn.Module):
         # Add a batch dimension to the positional encoding
         pe = pe.unsqueeze(0) # (1, seq_len, d_model)
         # Register the positional encoding as a buffer
+        # When you have a tensor that you want to keep inside the model not as a learned parameter, but you want it to be saved when you save the file of the model, you should register it as a buffer.
         self.register_buffer('pe', pe)
 
     def forward(self, x):
+        # we also tell the model that we don't want to learn this positional encoding because they are fixed, they will always be the same they are not learned along the training process so we just do it requires_grad_(False)
         x = x + (self.pe[:, :x.shape[1], :]).requires_grad_(False) # (batch, seq_len, d_model)
         return self.dropout(x)
 
@@ -117,6 +120,7 @@ class MultiHeadAttentionBlock(nn.Module):
         key = self.w_k(k) # (batch, seq_len, d_model) --> (batch, seq_len, d_model)
         value = self.w_v(v) # (batch, seq_len, d_model) --> (batch, seq_len, d_model)
 
+        # Why do we transpose because we prefer to have the edge dimesion instead of being the third dimesion. We want it to be the second dimesion and this way each view head will see all the sentence. So we will see this dimension the seq_len by d_k.
         # (batch, seq_len, d_model) --> (batch, seq_len, h, d_k) --> (batch, h, seq_len, d_k)
         query = query.view(query.shape[0], query.shape[1], self.h, self.d_k).transpose(1, 2)
         key = key.view(key.shape[0], key.shape[1], self.h, self.d_k).transpose(1, 2)
@@ -194,6 +198,7 @@ class ProjectionLayer(nn.Module):
     def forward(self, x) -> None:
         # (batch, seq_len, d_model) --> (batch, seq_len, vocab_size)
         return self.proj(x)
+        # return torch.log_softmax(self.proj(x), dim=-1)
     
 class Transformer(nn.Module):
 

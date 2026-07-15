@@ -39,6 +39,7 @@ class BilingualDataset(Dataset):
         if enc_num_padding_tokens < 0 or dec_num_padding_tokens < 0:
             raise ValueError("Sentence is too long")
 
+        # Add SOS and EOS to the source text
         # Add <s> and </s> token
         encoder_input = torch.cat(
             [
@@ -50,6 +51,7 @@ class BilingualDataset(Dataset):
             dim=0,
         )
 
+        # Add SOS to the decoder input
         # Add only <s> token
         decoder_input = torch.cat(
             [
@@ -60,6 +62,7 @@ class BilingualDataset(Dataset):
             dim=0,
         )
 
+        # Add EOS to the label (what we expect as output from the decoder)
         # Add only </s> token
         label = torch.cat(
             [
@@ -86,5 +89,6 @@ class BilingualDataset(Dataset):
         }
     
 def causal_mask(size):
+    # Every value that is above the diagonal will become zero.
     mask = torch.triu(torch.ones((1, size, size)), diagonal=1).type(torch.int)
     return mask == 0
